@@ -1,4 +1,4 @@
-from resnet import BasicBlock
+from model.resnet import BasicBlock
 import torch.nn as nn
 
 

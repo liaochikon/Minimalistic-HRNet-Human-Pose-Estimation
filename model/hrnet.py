@@ -1,21 +1,25 @@
-from resnet import BasicBlock, Bottleneck
-from stage import Stage
 import torch
 import torch.nn as nn
+from model.resnet import Bottleneck
+from model.stage import Stage
 
 class HRNet(nn.Module):
-    def __init__(self):
-        super(HRNet, self).__init__()
-        self.stem = self.make_stem()
-        self.layer1 = self.make_layer1()
-        self.transition1 = self.make_transition1()
-        self.stage2 = self.make_stage2()
-        self.transition2 = self.make_transition2()
-        self.stage3 = self.make_stage3()
-        self.transition3 = self.make_transition3()
-        self.stage4 = self.make_stage4()
-        self.final_layer = self.make_finallayer()
+    def __init__(self, base_channels = 32, out_channels = 17):
+        self.base_channels = base_channels
+        self.out_channels = out_channels
 
+        super(HRNet, self).__init__()
+        self.stem = self.make_stem(inplanes = 3, planes = 64)
+        self.layer1 = self.make_layer1(inplanes = 64, planes = 256)
+        self.transition1 = self.make_transition1(inplanes = 256, branch1_planes = self.base_channels, branch2_planes = 64)
+        self.stage2 = self.make_stage2(base_channels = self.base_channels)
+        self.transition2 = self.make_transition2(branch1_inplanes = None, branch2_inplanes = None, branch3_inplanes = 64, 
+                                                 branch1_planes = None, branch2_planes = None, branch3_planes = 128)
+        self.stage3 = self.make_stage3(base_channels = self.base_channels)
+        self.transition3 = self.make_transition3(branch1_inplanes = None, branch2_inplanes = None, branch3_inplanes = None, branch4_inplanes = 128,
+                                                 branch1_planes = None, branch2_planes = None, branch3_planes = None, branch4_planes = 256)
+        self.stage4 = self.make_stage4(base_channels = self.base_channels)
+        self.final_layer = self.make_finallayer(base_channels = self.base_channels, out_channels = self.out_channels)
 
     def make_stem(self, inplanes = 3, planes = 64, momentum = 0.1):
         return nn.Sequential(nn.Conv2d(in_channels=inplanes, out_channels=planes, kernel_size=3, stride=2, padding=1, bias=False),
@@ -94,9 +98,10 @@ class HRNet(nn.Module):
         x = self.stage4(x)
         x = self.final_layer(x[0])
         return x
-    
-model = HRNet()
-input = torch.randn(1, 3, 256, 192)
-output = model.forward(input)
 
-print(output.size())
+#example
+if __name__ == "__main__": 
+    model = HRNet()
+    input = torch.randn(1, 3, 256, 192)
+    output = model.forward(input)
+    print(output.size())
