@@ -4,18 +4,29 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 from model import HRNet
 from dataset import COCOWholebody_BodyWithFeet
-from loss import JointsMSELoss
+from util import JointsMSELoss, accuracy
 
-
-train_annopath = "data\\annotations\\person_keypoints_wholebody_val.json"
-train_imagepath = "data\\val2017"
+batch_size = 6
+device = "cuda"
+print_freq = 100
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-transforms.Compose([transforms.ToTensor(), normalize])
+
+train_annopath = "data\\annotations\\person_keypoints_wholebody_train.json"
+train_imagepath = "data\\train2017"
 train_dataset = COCOWholebody_BodyWithFeet(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]))
 train_loader = torch.utils.data.DataLoader(train_dataset,
-                                           batch_size=6,
+                                           batch_size=batch_size,
                                            shuffle=True,
-                                           num_workers=32,
+                                           num_workers=0,
+                                           pin_memory=True)
+
+val_annopath = "data\\annotations\\person_keypoints_wholebody_val.json"
+val_imagepath = "data\\val2017"
+val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]))
+val_loader = torch.utils.data.DataLoader(val_dataset,
+                                           batch_size=batch_size,
+                                           shuffle=True,
+                                           num_workers=0,
                                            pin_memory=True)
 
 lr = 0.001
@@ -32,24 +43,61 @@ lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
 
 criterion = JointsMSELoss(use_target_weight=True).cuda()
 
-model.train()
+
+
+
+best_train_acc = 0.0
+best_val_acc = 0.0
 for epoch in range(0, 5000):
+    print("epoch : " + str(epoch))
+
+    model.train()
     lr_scheduler.step()
-    for i, (input, target) in enumerate(train_loader):
-        target = target.cuda(non_blocking=True)
+    train_acc_list = []
+    for i, (input, targets, target_weights, joints, joint_vis) in enumerate(train_loader):
+        targets = targets.cuda(non_blocking=True)
+        target_weights = target_weights.cuda(non_blocking=True)
         
         outputs = model(input)
-
-        loss = 0.0
-        for output in outputs:
-            loss += criterion(output, target, target_weight)
-
+        loss = criterion(outputs, targets, target_weights)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
+        _, avg_acc, cnt, pred = accuracy(outputs.detach().cpu().numpy(),
+                                         targets.detach().cpu().numpy())
+        train_acc_list.append(avg_acc)
+        
+        if (i + 1) % print_freq == 0:
+            print("training... [{} / {}]( loss : {}, accuracy : {})".format(len(train_loader), i + 1, loss.item(), avg_acc))
 
-#input = torch.randn(1, 3, 256, 192)
-#output = model.forward(input)
-#print(output.size())
+    train_acc = sum(train_acc_list) / len(train_acc_list)
+    if train_acc > best_train_acc:
+        best_train_acc = train_acc
+    print("average train accuracy : {}, best train accuracy : {})".format(train_acc, best_train_acc))
+
+    model.eval()
+    with torch.no_grad():
+        val_acc_list = []
+        for i, (input, targets, target_weights, joints, joint_vis) in enumerate(val_loader):
+            targets = targets.cuda(non_blocking=True)
+            target_weights = target_weights.cuda(non_blocking=True)
+
+            outputs = model(input)
+            loss = criterion(outputs, targets, target_weights)
+
+            _, avg_acc, cnt, pred = accuracy(outputs.detach().cpu().numpy(),
+                                             targets.detach().cpu().numpy())
+            val_acc_list.append(avg_acc)
+
+            if (i + 1) % print_freq == 0:
+                print("validating... [{} / {}]( loss : {}, accuracy : {})".format(len(val_loader), i + 1, loss.item(), avg_acc))
+
+        val_acc = sum(val_acc_list) / len(val_acc_list)
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            torch.save(model.module.state_dict(), "best_val_acc.pth")
+        print("average val accuracy : {}, best val accuracy : {})".format(val_acc, best_val_acc))
+
+    #torch.save(model.module.state_dict(), "final_state.pth")
