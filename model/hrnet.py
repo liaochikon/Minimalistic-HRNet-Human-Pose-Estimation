@@ -104,4 +104,4 @@ if __name__ == "__main__":
     model = HRNet()
     input = torch.randn(1, 3, 256, 192)
     output = model.forward(input)
-    print(output.size())
+    print(output.numpy())

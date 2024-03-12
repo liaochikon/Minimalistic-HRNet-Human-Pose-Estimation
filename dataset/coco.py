@@ -49,10 +49,10 @@ class COCOBasic(Dataset):
         return len(self.image_ids)
     
 class COCOWholebody_BodyWithFeet(Dataset):
-    def __init__(self, anno_path, image_root_path, 
-                 num_joints = 23, 
-                 image_height = 192, image_width = 256, 
-                 heatmap_height = 48, heatmap_width = 64, heatmap_sigma = 1,
+    def __init__(self, anno_path, image_root_path,
+                 num_joints = 23,
+                 image_height = 192, image_width = 256,
+                 heatmap_height = 48, heatmap_width = 64, heatmap_sigma = 2,
                  transforms = None):
         
         self.anno_path = anno_path
@@ -174,13 +174,37 @@ class COCOWholebody_BodyWithFeet(Dataset):
         if use_different_joints_weight:
             target_weights = np.multiply(target_weights, self.joints_weight)
         return targets, target_weights
+    
+    def get_preprocessed_image(self, idx):
+        image_path = self.image_paths[idx]
+        bbox = self.bbox_list[idx]
+
+        image = cv2.imread(image_path)
+        croped_image = image[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(bbox[0] + bbox[2])]
+        image_preprocess, _ = self.image_preprocess(croped_image)
+        
+        return image_preprocess
+    
+    def get_preprocessed_joints(self, idx):
+        image_path = self.image_paths[idx]
+        bbox = self.bbox_list[idx].copy()
+        joints = self.joints_list[idx].copy()
+
+        image = cv2.imread(image_path)
+        croped_image = image[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(bbox[0] + bbox[2])]
+        image_preprocess, M = self.image_preprocess(croped_image)
+        joints[:, 0] -= bbox[0]
+        joints[:, 1] -= bbox[1]
+        joints[:, :2] = np.matmul(M[:, :2], joints[:, :2].T).T
+
+        return joints
 
     def __getitem__(self, idx):
         image_id = self.image_ids[idx]
         image_path = self.image_paths[idx]
-        bbox = self.bbox_list[idx]
-        joints = self.joints_list[idx]
-        joint_vis = self.joint_vis_list[idx]
+        bbox = self.bbox_list[idx].copy()
+        joints = self.joints_list[idx].copy()
+        joint_vis = self.joint_vis_list[idx].copy()
 
         image = cv2.imread(image_path)
         croped_image = image[int(bbox[1]): int(bbox[1] + bbox[3]), int(bbox[0]): int(bbox[0] + bbox[2])]
@@ -197,7 +221,7 @@ class COCOWholebody_BodyWithFeet(Dataset):
         targets = torch.from_numpy(targets)
         target_weights = torch.from_numpy(target_weights)
         
-        return image_preprocess, targets, target_weights, joints, joint_vis
+        return image_preprocess, targets, target_weights, idx
 
     def __len__(self):
         return len(self.image_ids)
