@@ -18,7 +18,7 @@ val_dataset = COCOWholebody_BBox(val_annopath, val_imagepath, transforms=transfo
 
 for i in range(len(val_dataset)):
     img = val_dataset.get_preprocessed_image(i)
-    targets = val_dataset.generate_heatmap_from_bbox(i, (3, 3), 2)
+    targets = val_dataset.generate_heatmap_from_bbox(i)
     
     for cat, t in enumerate(targets):
         #plt.imshow(t)
@@ -40,8 +40,8 @@ for i in range(len(val_dataset)):
             cy = int(M["m01"] / M["m00"])
             (x, y, w, h) = cv2.boundingRect(c)
 
-            w_s = int(w * 1.7)
-            h_s = int(h * 1.7)
+            w_s = int(w * 2.7)
+            h_s = int(h * 2.7)
             x_s = int(x - (w_s - w) / 2)
             y_s = int(y - (h_s - h) / 2)
 

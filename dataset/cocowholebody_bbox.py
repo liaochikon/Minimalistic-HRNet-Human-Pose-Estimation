@@ -112,7 +112,7 @@ class COCOWholebody_BBox(Dataset):
         
         return bbox_int
 
-    def generate_heatmap_from_bbox(self, idx, kernel_size = (5, 5), sigma = 2):
+    def generate_heatmap_from_bbox(self, idx):
         image_size = self.image_sizes[idx]
         image_affine = self.image_affines[idx].copy()
         person_bbox_list = self.person_bbox_list[idx].copy()
@@ -127,7 +127,7 @@ class COCOWholebody_BBox(Dataset):
             if len(person_bbox_int) == 0:
                 continue
 
-            feature_map = self.get_bbox_feature_map(person_bbox_int, sigma_x_ratio = 0.3, sigma_y_ratio = 0.3)
+            feature_map = self.get_bbox_feature_map(person_bbox_int, sigma_x_ratio = 0.2, sigma_y_ratio = 0.2)
             targets[0,
                     person_bbox_int[1]:person_bbox_int[1] + person_bbox_int[3], 
                     person_bbox_int[0]:person_bbox_int[0] + person_bbox_int[2]] = feature_map
@@ -138,7 +138,7 @@ class COCOWholebody_BBox(Dataset):
             if len(face_bbox_int) == 0:
                 continue
                 
-            feature_map = self.get_bbox_feature_map(face_bbox_int, sigma_x_ratio = 0.5, sigma_y_ratio = 0.5)
+            feature_map = self.get_bbox_feature_map(face_bbox_int, sigma_x_ratio = 0.3, sigma_y_ratio = 0.3)
             targets[1, 
                     face_bbox_int[1]:face_bbox_int[1] + face_bbox_int[3], 
                     face_bbox_int[0]:face_bbox_int[0] + face_bbox_int[2]] = feature_map
@@ -149,7 +149,7 @@ class COCOWholebody_BBox(Dataset):
             if len(lefthand_bbox_int) == 0:
                 continue
 
-            feature_map = self.get_bbox_feature_map(lefthand_bbox_int, sigma_x_ratio = 0.5, sigma_y_ratio = 0.5)
+            feature_map = self.get_bbox_feature_map(lefthand_bbox_int, sigma_x_ratio = 0.3, sigma_y_ratio = 0.3)
             targets[2,
                     lefthand_bbox_int[1]:lefthand_bbox_int[1] + lefthand_bbox_int[3], 
                     lefthand_bbox_int[0]:lefthand_bbox_int[0] + lefthand_bbox_int[2]] = feature_map
@@ -160,7 +160,7 @@ class COCOWholebody_BBox(Dataset):
             if len(righthand_bbox_int) == 0:
                 continue
 
-            feature_map = self.get_bbox_feature_map(righthand_bbox_int, sigma_x_ratio = 0.5, sigma_y_ratio = 0.5)
+            feature_map = self.get_bbox_feature_map(righthand_bbox_int, sigma_x_ratio = 0.3, sigma_y_ratio = 0.3)
             targets[3,
                     righthand_bbox_int[1]:righthand_bbox_int[1] + righthand_bbox_int[3], 
                     righthand_bbox_int[0]:righthand_bbox_int[0] + righthand_bbox_int[2]] = feature_map
