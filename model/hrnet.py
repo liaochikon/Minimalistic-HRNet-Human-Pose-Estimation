@@ -11,13 +11,13 @@ class HRNet(nn.Module):
         super(HRNet, self).__init__()
         self.stem = self.make_stem(inplanes = 3, planes = 64)
         self.layer1 = self.make_layer1(inplanes = 64, planes = 256)
-        self.transition1 = self.make_transition1(inplanes = 256, branch1_planes = self.base_channels, branch2_planes = 64)
+        self.transition1 = self.make_transition1(inplanes = 256, branch1_planes = self.base_channels, branch2_planes = self.base_channels * 2)
         self.stage2 = self.make_stage2(base_channels = self.base_channels)
-        self.transition2 = self.make_transition2(branch1_inplanes = None, branch2_inplanes = None, branch3_inplanes = 64, 
-                                                 branch1_planes = None, branch2_planes = None, branch3_planes = 128)
+        self.transition2 = self.make_transition2(branch1_inplanes = None, branch2_inplanes = None, branch3_inplanes = self.base_channels * 2, 
+                                                 branch1_planes = None, branch2_planes = None, branch3_planes = self.base_channels * 4)
         self.stage3 = self.make_stage3(base_channels = self.base_channels)
-        self.transition3 = self.make_transition3(branch1_inplanes = None, branch2_inplanes = None, branch3_inplanes = None, branch4_inplanes = 128,
-                                                 branch1_planes = None, branch2_planes = None, branch3_planes = None, branch4_planes = 256)
+        self.transition3 = self.make_transition3(branch1_inplanes = None, branch2_inplanes = None, branch3_inplanes = None, branch4_inplanes = self.base_channels * 4,
+                                                 branch1_planes = None, branch2_planes = None, branch3_planes = None, branch4_planes = self.base_channels * 8)
         self.stage4 = self.make_stage4(base_channels = self.base_channels)
         self.final_layer = self.make_finallayer(base_channels = self.base_channels, out_channels = self.out_channels)
 

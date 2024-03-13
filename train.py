@@ -93,15 +93,15 @@ def get_output_result(dataset, outputs, targets, data_idx, image_name, epoch, ba
     plt.imshow(img_output, vmin=0, vmax=255)
     plt.savefig('log/' + image_name + '_' + str(epoch) + '_' + str(batch_num) + '.png', dpi=500)
 
-batch_size = 24
+batch_size = 8
 device = "cuda"
-print_freq = 100
+print_freq = 300
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
 train_annopath = "data\\annotations\\person_keypoints_wholebody_train.json"
 train_imagepath = "data\\train2017"
 train_dataset = COCOWholebody_BodyWithFeet(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
-                                           image_height=256, image_width=192, heatmap_height=64, heatmap_width=48)
+                                           image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 train_loader = torch.utils.data.DataLoader(train_dataset,
                                            batch_size=batch_size,
                                            shuffle=True,
@@ -111,7 +111,7 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
 val_annopath = "data\\annotations\\person_keypoints_wholebody_val.json"
 val_imagepath = "data\\val2017"
 val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
-                                         image_height=256, image_width=192, heatmap_height=64, heatmap_width=48)
+                                         image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 val_loader = torch.utils.data.DataLoader(val_dataset,
                                            batch_size=batch_size,
                                            shuffle=True,

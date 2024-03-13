@@ -25,3 +25,26 @@ class JointsMSELoss(nn.Module):
                 loss += 0.5 * self.criterion(heatmap_pred, heatmap_gt)
 
         return loss / num_joints
+    
+class IOULoss(nn.Module):
+    def __init__(self, use_target_weight):
+        super(JointsMSELoss, self).__init__()
+        self.criterion = nn.MSELoss(reduction='mean')
+        self.use_target_weight = use_target_weight
+
+    def forward(self, output, target):
+
+        return loss
+    
+    def bb_intersection_over_union(boxA, boxB):
+        xA = max(boxA[0], boxB[0])
+        yA = max(boxA[1], boxB[1])
+        xB = min(boxA[2], boxB[2])
+        yB = min(boxA[3], boxB[3])
+
+        interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+        boxAArea = (boxA[2] - boxA[0] + 1) * (boxA[3] - boxA[1] + 1)
+        boxBArea = (boxB[2] - boxB[0] + 1) * (boxB[3] - boxB[1] + 1)
+        iou = interArea / float(boxAArea + boxBArea - interArea)
+
+        return iou
