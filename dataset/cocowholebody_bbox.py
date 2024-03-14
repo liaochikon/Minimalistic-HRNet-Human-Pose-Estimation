@@ -9,20 +9,16 @@ import matplotlib.pyplot as plt
 
 class COCOWholebody_BBox(Dataset):
     def __init__(self, anno_path, image_root_path,
-                 num_joints = 21,
                  image_height = 192, image_width = 256,
-                 heatmap_height = 48, heatmap_width = 64, heatmap_kernel_size = (5, 5), heatmap_sigma = 2,
+                 heatmap_height = 48, heatmap_width = 64,
                  transforms = None):
         
         self.anno_path = anno_path
         self.image_root_path = image_root_path
-        self.num_joints = num_joints
         self.image_height = image_height
         self.image_width = image_width
         self.heatmap_height = heatmap_height
         self.heatmap_width = heatmap_width
-        self.heatmap_kernel_size = heatmap_kernel_size
-        self.heatmap_sigma = heatmap_sigma
         self._transforms = transforms
 
         self._COCO = COCO(anno_path)
@@ -53,10 +49,18 @@ class COCOWholebody_BBox(Dataset):
             lefthand_bbox_list = []
             righthand_bbox_list = []
             for person_anno in people_anno:
+                if person_anno['num_keypoints'] == 0:
+                    continue
+                if person_anno['face_valid'] == 0 or person_anno['lefthand_valid'] == 0 or person_anno['righthand_valid'] == 0:
+                    continue
+
                 person_bbox_list.append(person_anno['bbox'])
                 face_bbox_list.append(person_anno['face_box'])
                 lefthand_bbox_list.append(person_anno['lefthand_box'])
                 righthand_bbox_list.append(person_anno['righthand_box'])
+
+            if len(person_bbox_list) == 0:
+                continue
             
             self.image_ids.append(raw_image_id)
             self.image_sizes.append(image_sizes)
@@ -175,7 +179,7 @@ class COCOWholebody_BBox(Dataset):
                 target_resized = target_resized / target_max
             targets_preprocessed.append(target_resized)
         
-        return targets_preprocessed
+        return np.array(targets_preprocessed, dtype=np.float)
             
     
     def get_preprocessed_image(self, idx):
@@ -193,7 +197,7 @@ class COCOWholebody_BBox(Dataset):
         if self._transforms:
             image_preprocess = self._transforms(image_preprocess)
 
-        targets = torch.from_numpy(targets_preprocessed)
+        targets = torch.from_numpy(targets_preprocessed).float()
         
         return image_preprocess, targets, idx
 
