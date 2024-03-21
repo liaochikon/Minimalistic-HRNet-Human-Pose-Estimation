@@ -99,7 +99,6 @@ def get_output_result(dataset, flipped, outputs, targets, data_idx, image_name, 
 ######################################### Model training config start:
 batch_size = 12
 device = "cuda"
-normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
 train_annopath = "data\\annotations\\person_keypoints_wholebody_train.json"
 train_imagepath = "data\\train2017"
@@ -109,13 +108,14 @@ val_imagepath = "data\\val2017"
 resume_training = True
 model_save_path = "weight/latest.pth"
 
+normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_dataset = COCOWholebody_BodyWithFeetAndPalm(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
 lr = 0.001
-lr_step = [30, 50]
+lr_step = [50, 100]
 lr_factor = 0.1
 base_channels = 48
 out_channels = train_dataset.num_joints
