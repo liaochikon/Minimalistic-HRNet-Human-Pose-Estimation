@@ -4,7 +4,6 @@ from pycocotools.coco import COCO
 import numpy as np
 import cv2
 import os
-import random
 
 class COCOWholebody_BodyWithFeetAndPalm(Dataset):
     def __init__(self, anno_path, image_root_path,

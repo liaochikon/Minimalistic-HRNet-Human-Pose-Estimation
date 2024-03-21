@@ -115,7 +115,7 @@ val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, tra
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
 lr = 0.001
-lr_step = [50, 100]
+lr_step = [100, 170]
 lr_factor = 0.1
 base_channels = 48
 out_channels = train_dataset.num_joints
@@ -161,11 +161,12 @@ if __name__ == "__main__":
                                                         lr_step, 
                                                         lr_factor,
                                                         last_epoch=model_dict['epoch'])
-    
+
     if model_dict['epoch'] == -1:
         model_dict['epoch'] = 0
     for epoch in range(model_dict['epoch'], 5000):
         print("epoch : " + str(epoch))
+        print("current learn rate : {}".format(lr_scheduler.get_last_lr()))
         model_dict['epoch'] = epoch
 
         train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 300)

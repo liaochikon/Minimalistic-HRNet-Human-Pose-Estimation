@@ -20,12 +20,17 @@ for i in range(len(val_dataset)):
     img = val_dataset.get_preprocessed_image(i)
     joints = val_dataset.get_preprocessed_joints(i)
 
-    #img = val_dataset.get_filpbody_image(i)
-    #joints = val_dataset.get_filpbody_joints(i)
+    for jt, j in enumerate(joints):
+        cv2.putText(img, str(jt), (int(j[0]), int(j[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
+        cv2.circle(img,(int(j[0]), int(j[1])), 1, (0, 0, 255), 1)
+    cv2.imshow("img1", img)
+
+    img = val_dataset.get_filpbody_image(i)
+    joints = val_dataset.get_filpbody_joints(i)
 
     for jt, j in enumerate(joints):
         cv2.putText(img, str(jt), (int(j[0]), int(j[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
         cv2.circle(img,(int(j[0]), int(j[1])), 1, (0, 0, 255), 1)
-    cv2.imshow("img", img)
+    cv2.imshow("img2", img)
     cv2.waitKey(0)  
         
