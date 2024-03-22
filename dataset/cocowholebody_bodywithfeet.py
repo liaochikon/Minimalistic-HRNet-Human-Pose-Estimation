@@ -28,7 +28,7 @@ class COCOWholebody_BodyWithFeet(Dataset):
         self._COCO = COCO(anno_path)
         self.raw_image_ids = list(self._COCO.imgs.keys())
 
-        self.flip_joints_order = [0, 1, 2, 3, 4, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21]
+        self.flip_joints_order = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21]
 
         self.image_ids = []
         self.image_paths = []
@@ -165,8 +165,12 @@ class COCOWholebody_BodyWithFeet(Dataset):
         joints[:, 0] *= -1 
         joints[:, 0] += self.image_width
         joints = joints[self.flip_joints_order]
-        
         return joints
+    
+    def get_filpbody_joint_vis(self, idx):
+        joint_vis = self.joint_vis_list[idx].copy()
+        joint_vis = joint_vis[self.flip_joints_order]
+        return joint_vis
 
     def get_preprocessed_image(self, idx):
         image_path = self.image_paths[idx]
@@ -184,20 +188,26 @@ class COCOWholebody_BodyWithFeet(Dataset):
         joints[:, 1] -= clean_bbox[1]
         joints[:, :2] = np.matmul(image_affine[:, :2], joints[:, :2].T).T
         return joints
+    
+    def get_preprocessed_joint_vis(self, idx):
+        joint_vis = self.joint_vis_list[idx].copy()
+        return joint_vis
 
     def __getitem__(self, idx):
         image_preprocess = []
         joints = []
+        joint_vis = []
         flipped = None
         if random.random() <= self.flip_prob:
             image_preprocess = self.get_filpbody_image(idx)
-            joints = self.get_filpbody_joints(idx) 
+            joints = self.get_filpbody_joints(idx)
+            joint_vis = self.get_filpbody_joint_vis(idx)
             flipped = True
         else:
             image_preprocess = self.get_preprocessed_image(idx)
             joints = self.get_preprocessed_joints(idx)
+            joint_vis = self.get_preprocessed_joint_vis(idx)
             flipped = False
-        joint_vis = self.joint_vis_list[idx].copy()
 
         targets, target_weights = self.generate_heatmap_from_joints(joints, joint_vis, self.heatmap_sigma)
 

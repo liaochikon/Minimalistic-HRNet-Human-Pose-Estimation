@@ -100,12 +100,12 @@ def get_output_result(dataset, flipped, outputs, targets, data_idx, image_name, 
 batch_size = 12
 device = "cuda"
 
-train_annopath = "data\\annotations\\person_keypoints_wholebody_train.json"
-train_imagepath = "data\\train2017"
-val_annopath = "data\\annotations\\person_keypoints_wholebody_val.json"
-val_imagepath = "data\\val2017"
+train_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_train_v1.0.json"
+train_imagepath = "data\\coco_wholebody\\train2017"
+val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
+val_imagepath = "data\\coco_wholebody\\val2017"
 
-resume_training = False
+resume_training = True
 model_save_path = "weight/latest.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])

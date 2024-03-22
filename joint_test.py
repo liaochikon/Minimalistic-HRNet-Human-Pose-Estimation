@@ -41,8 +41,8 @@ batch_size = 1
 device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-val_annopath = "data\\annotations\\person_keypoints_wholebody_val.json"
-val_imagepath = "data\\val2017"
+val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
+val_imagepath = "data\\coco_wholebody\\val2017"
 val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                          image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 

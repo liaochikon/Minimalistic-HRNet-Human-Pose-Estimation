@@ -6,9 +6,9 @@ import cv2
 import os
 import random
 
-class COCOWholebody_BodyWithFeetAndPalm(Dataset):
+class Halpe_Fullbody(Dataset):
     def __init__(self, anno_path, image_root_path,
-                 num_joints = 27,
+                 num_joints = 26,
                  image_height = 384, image_width = 288,
                  heatmap_height = 96, heatmap_width = 72, heatmap_sigma = 2,
                  flip_prob = 0.5,
@@ -28,7 +28,7 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
         self._COCO = COCO(anno_path)
         self.raw_image_ids = list(self._COCO.imgs.keys())
 
-        self.flip_joints_order = [0, 1, 2, 3, 4, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25]
+        self.flip_joints_order = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 17, 18, 19, 21, 20, 23, 22, 25, 24]
 
         self.image_ids = []
         self.image_paths = []
@@ -49,10 +49,6 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
             for person_anno in people_anno:
                 if person_anno['num_keypoints'] == 0:
                     continue
-                if person_anno['foot_valid'] == 0:
-                    continue
-                if person_anno['lefthand_valid'] == 0 or person_anno['righthand_valid'] == 0:
-                    continue
 
                 bbox = person_anno['bbox']
                 scale = max([bbox[2] / self.image_width, bbox[3] / self.image_height])
@@ -61,25 +57,14 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
                 clean_bbox = [clean_bbox_topleft[0], clean_bbox_topleft[1], self.image_width * scale, self.image_height * scale]
                 image_affine = self.get_affine(clean_bbox)
 
-                body_keypoints = person_anno['keypoints']
-                feet_keypoints = np.array(person_anno['foot_kpts']).reshape((6, 3))
-                righthand_keypoints = np.array(person_anno['righthand_kpts']).reshape((21, 3))#17, 5, 0
-                lefthand_keypoints = np.array(person_anno['lefthand_kpts']).reshape((21, 3))#17, 5, 0
+                fullbody_keypoints = np.array(person_anno['keypoints'], dtype=np.float).reshape((-1, 3))
+                fullbody_keypoints = fullbody_keypoints[:26]
 
-                keypoints = np.array([*body_keypoints, 
-                                      *feet_keypoints[0], *feet_keypoints[3], 
-                                      *feet_keypoints[1], *feet_keypoints[4], 
-                                      *feet_keypoints[2], *feet_keypoints[5], 
-                                      *lefthand_keypoints[17], *righthand_keypoints[17], 
-                                      *lefthand_keypoints[5], *righthand_keypoints[5]], dtype=np.float)
-                                      #*lefthand_keypoints[0], *righthand_keypoints[0]], dtype=np.float)
-                keypoints = keypoints.reshape((-1, 3))
-
-                joints = keypoints.copy()
+                joints = fullbody_keypoints.copy()
                 joints[:, 2] = np.zeros(self.num_joints, dtype=np.float)
 
                 joint_vis = np.zeros((self.num_joints, 3), dtype=np.float)
-                for i, target_vis in enumerate(keypoints[:, 2]):
+                for i, target_vis in enumerate(fullbody_keypoints[:, 2]):
                     if target_vis > 0:
                         joint_vis[i][0] = 1.0
                         joint_vis[i][1] = 1.0
@@ -171,8 +156,12 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
         joints[:, 0] *= -1 
         joints[:, 0] += self.image_width
         joints = joints[self.flip_joints_order]
-        
         return joints
+    
+    def get_filpbody_joint_vis(self, idx):
+        joint_vis = self.joint_vis_list[idx].copy()
+        joint_vis = joint_vis[self.flip_joints_order]
+        return joint_vis
 
     def get_preprocessed_image(self, idx):
         image_path = self.image_paths[idx]
@@ -190,20 +179,26 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
         joints[:, 1] -= clean_bbox[1]
         joints[:, :2] = np.matmul(image_affine[:, :2], joints[:, :2].T).T
         return joints
+    
+    def get_preprocessed_joint_vis(self, idx):
+        joint_vis = self.joint_vis_list[idx].copy()
+        return joint_vis
 
     def __getitem__(self, idx):
         image_preprocess = []
         joints = []
+        joint_vis = []
         flipped = None
         if random.random() <= self.flip_prob:
             image_preprocess = self.get_filpbody_image(idx)
-            joints = self.get_filpbody_joints(idx) 
+            joints = self.get_filpbody_joints(idx)
+            joint_vis = self.get_filpbody_joint_vis(idx)
             flipped = True
         else:
             image_preprocess = self.get_preprocessed_image(idx)
             joints = self.get_preprocessed_joints(idx)
+            joint_vis = self.get_preprocessed_joint_vis(idx)
             flipped = False
-        joint_vis = self.joint_vis_list[idx].copy()
 
         targets, target_weights = self.generate_heatmap_from_joints(joints, joint_vis, self.heatmap_sigma)
 

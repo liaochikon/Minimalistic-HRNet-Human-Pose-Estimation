@@ -81,10 +81,10 @@ Inside **joint_train.py** in root folder, has a config section like this :
 batch_size = 12
 device = "cuda"
 
-train_annopath = "data\\annotations\\coco_wholebody_train_v1.0.json"
-train_imagepath = "data\\train2017"
-val_annopath = "data\\annotations\\coco_wholebody_val_v1.0.json"
-val_imagepath = "data\\val2017"
+train_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_train_v1.0.json"
+train_imagepath = "data\\coco_wholebody\\train2017"
+val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
+val_imagepath = "data\\coco_wholebody\\val2017"
 
 resume_training = False
 model_save_path = "weight/latest.pth"
