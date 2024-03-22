@@ -105,7 +105,7 @@ train_imagepath = "data\\coco_wholebody\\train2017"
 val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
 val_imagepath = "data\\coco_wholebody\\val2017"
 
-resume_training = True
+resume_training = False
 model_save_path = "weight/latest.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])

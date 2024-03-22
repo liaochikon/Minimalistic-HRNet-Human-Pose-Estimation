@@ -12,12 +12,15 @@ import torch.nn as nn
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-#val_annopath = "data\\halpe_fullbody\\annotations\\halpe_train_v1.json"
-#val_imagepath = "data\\halpe_fullbody\\train2015"
-val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
-val_imagepath = "data\\coco_wholebody\\val2017"
-val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize])) 
+val_annopath = "data\\halpe_fullbody\\annotations\\halpe_train_v1.json"
+val_imagepath = "data\\halpe_fullbody\\train2015"
+val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize])) 
 
+#val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
+#val_imagepath = "data\\coco_wholebody\\val2017"
+#val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize])) 
+
+print(len(val_dataset))
 for i in range(len(val_dataset)):
     img = val_dataset.get_preprocessed_image(i)
     joints = val_dataset.get_preprocessed_joints(i)

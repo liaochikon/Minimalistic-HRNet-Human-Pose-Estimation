@@ -65,7 +65,7 @@ class Halpe_Fullbody(Dataset):
 
                 joint_vis = np.zeros((self.num_joints, 3), dtype=np.float)
                 for i, target_vis in enumerate(fullbody_keypoints[:, 2]):
-                    if target_vis > 0:
+                    if target_vis > 1:
                         joint_vis[i][0] = 1.0
                         joint_vis[i][1] = 1.0
                         joint_vis[i][2] = 0.0
