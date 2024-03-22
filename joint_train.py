@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from model import HRNet
-from dataset import COCOWholebody_BodyWithFeetAndPalm
+from dataset import COCOWholebody_BodyWithFeet
 from util.joint_loss import JointsMSELoss
 from util.joint_util import accuracy
 
@@ -105,13 +105,13 @@ train_imagepath = "data\\train2017"
 val_annopath = "data\\annotations\\person_keypoints_wholebody_val.json"
 val_imagepath = "data\\val2017"
 
-resume_training = True
+resume_training = False
 model_save_path = "weight/latest.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-train_dataset = COCOWholebody_BodyWithFeetAndPalm(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+train_dataset = COCOWholebody_BodyWithFeet(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
-val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
 lr = 0.001
@@ -122,6 +122,9 @@ out_channels = train_dataset.num_joints
 ######################################### Model training config end.
 
 if __name__ == "__main__":
+    print("Train dataset length : {}".format(len(train_dataset)))
+    print("Val dataset length : {}".format(len(val_dataset)))
+
     train_loader = torch.utils.data.DataLoader(train_dataset,
                                             batch_size=batch_size,
                                             shuffle=True,
@@ -169,7 +172,7 @@ if __name__ == "__main__":
         print("current learn rate : {}".format(lr_scheduler.get_last_lr()))
         model_dict['epoch'] = epoch
 
-        train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 300)
+        train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 1000)
         model_dict['model_state_dict'] = model.module.state_dict()
         model_dict['optimizer_state_dict'] = optimizer.state_dict()
 
@@ -183,7 +186,7 @@ if __name__ == "__main__":
         print("current train loss : {}, current train accuracy : {})".format(train_loss, train_acc))
         print("best train loss : {}, best train accuracy : {})".format(model_dict['best_train_loss'], model_dict['best_train_accuracy']))
 
-        val_loss, val_acc = val(model, val_dataset, val_loader, criterion, epoch, 40)
+        val_loss, val_acc = val(model, val_dataset, val_loader, criterion, epoch, 200)
         if val_acc > model_dict['best_val_accuracy']:
             model_dict['best_val_accuracy'] = val_acc
             torch.save(model_dict, "weight/best_acc.pth")

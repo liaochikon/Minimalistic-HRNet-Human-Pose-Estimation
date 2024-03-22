@@ -46,8 +46,9 @@ val_imagepath = "data\\val2017"
 val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                          image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
-model = HRNet(base_channels=48, out_channels=29)
-model.load_state_dict(torch.load("weight/best_acc.pth"))
+model = HRNet(base_channels=48, out_channels=27)
+model_dict = torch.load("weight/best_acc.pth")
+model.load_state_dict(model_dict['model_state_dict'])
 
 best_train_acc = 0.0
 best_val_acc = 0.0

@@ -6,9 +6,9 @@ import cv2
 import os
 import random
 
-class COCOWholebody_BodyWithFeetAndPalm(Dataset):
+class COCOWholebody_BodyWithFeet(Dataset):
     def __init__(self, anno_path, image_root_path,
-                 num_joints = 27,
+                 num_joints = 23,
                  image_height = 384, image_width = 288,
                  heatmap_height = 96, heatmap_width = 72, heatmap_sigma = 2,
                  flip_prob = 0.5,
@@ -28,7 +28,7 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
         self._COCO = COCO(anno_path)
         self.raw_image_ids = list(self._COCO.imgs.keys())
 
-        self.flip_joints_order = [0, 1, 2, 3, 4, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21, 24, 23, 26, 25]
+        self.flip_joints_order = [0, 1, 2, 3, 4, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21]
 
         self.image_ids = []
         self.image_paths = []
@@ -51,8 +51,6 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
                     continue
                 if person_anno['foot_valid'] == 0:
                     continue
-                if person_anno['lefthand_valid'] == 0 or person_anno['righthand_valid'] == 0:
-                    continue
 
                 bbox = person_anno['bbox']
                 scale = max([bbox[2] / self.image_width, bbox[3] / self.image_height])
@@ -63,16 +61,12 @@ class COCOWholebody_BodyWithFeetAndPalm(Dataset):
 
                 body_keypoints = person_anno['keypoints']
                 feet_keypoints = np.array(person_anno['foot_kpts']).reshape((6, 3))
-                righthand_keypoints = np.array(person_anno['righthand_kpts']).reshape((21, 3))#17, 5, 0
-                lefthand_keypoints = np.array(person_anno['lefthand_kpts']).reshape((21, 3))#17, 5, 0
 
                 keypoints = np.array([*body_keypoints, 
                                       *feet_keypoints[0], *feet_keypoints[3], 
                                       *feet_keypoints[1], *feet_keypoints[4], 
-                                      *feet_keypoints[2], *feet_keypoints[5], 
-                                      *lefthand_keypoints[17], *righthand_keypoints[17], 
-                                      *lefthand_keypoints[5], *righthand_keypoints[5]], dtype=np.float)
-                                      #*lefthand_keypoints[0], *righthand_keypoints[0]], dtype=np.float)
+                                      *feet_keypoints[2], *feet_keypoints[5]], dtype=np.float)
+
                 keypoints = keypoints.reshape((-1, 3))
 
                 joints = keypoints.copy()
