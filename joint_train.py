@@ -106,7 +106,7 @@ val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
 val_imagepath = "data\\coco_wholebody\\val2017"
 
 resume_training = False
-model_save_path = "weight/latest.pth"
+resume_model_path = "weight/latest.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 train_dataset = COCOWholebody_BodyWithFeet(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     criterion = JointsMSELoss(use_target_weight=True).cuda()
     optimizer = optim.Adam(model.parameters(), lr=lr)
     if resume_training:
-        model_dict = torch.load(model_save_path)
+        model_dict = torch.load(resume_model_path)
         model.load_state_dict(model_dict['model_state_dict'])
         model = torch.nn.DataParallel(model, device_ids=(0,)).cuda()
         optimizer.load_state_dict(model_dict['optimizer_state_dict'])

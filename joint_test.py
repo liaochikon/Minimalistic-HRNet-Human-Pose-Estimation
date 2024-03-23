@@ -1,54 +1,24 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import torchvision.transforms as transforms
 from model import HRNet
-from dataset import COCOWholebody_BodyWithFeetAndPalm
+from dataset import COCOWholebody_BodyWithFeet
 from util.joint_util import *
-import matplotlib.pyplot as plt
-import numpy as np
 import cv2
 
-def get_output_result(dataset, outputs, targets, data_idx, image_name, epoch, batch_num):
-    img_output = []
-    for i, (output, target, data_id) in enumerate(zip(outputs, targets, data_idx)):
-        img = dataset.get_preprocessed_image(data_id)
-        resized_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) / 2
-        #img_concat = resized_gray
-        target_concat = resized_gray
-        output_concat = resized_gray
-        for t, ta in zip(output, target):
-            t = t.detach().cpu().numpy()
-            ta = ta.detach().cpu().numpy()
-            t = cv2.resize(t, (img.shape[1], img.shape[0]))
-            ta = cv2.resize(ta, (img.shape[1], img.shape[0]))
-            t *= 255 / 2
-            ta *= 255 / 2
-            t += resized_gray
-            ta += resized_gray
-            #img_concat = np.hstack((img_concat, resized_gray))
-            target_concat = np.hstack((target_concat, ta))
-            output_concat = np.hstack((output_concat, t))
-        if i == 0:
-            img_output = np.vstack((target_concat, output_concat))
-        else:
-            img_output = np.vstack((img_output, target_concat))
-            img_output = np.vstack((img_output, output_concat)) 
-    plt.imshow(img_output, vmin=0, vmax=255)
-    plt.savefig('log/' + image_name + '_' + str(epoch) + '_' + str(batch_num) + '.png', dpi=500)
-
+######################################### Model test config start:
 batch_size = 1
 device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
 val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
 val_imagepath = "data\\coco_wholebody\\val2017"
-val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                          image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
-model = HRNet(base_channels=48, out_channels=27)
-model_dict = torch.load("weight/best_acc.pth")
+model = HRNet(base_channels=48, out_channels=23)
+model_dict = torch.load("weight/best_loss.pth")
 model.load_state_dict(model_dict['model_state_dict'])
+######################################### Model test config end.
 
 best_train_acc = 0.0
 best_val_acc = 0.0
@@ -61,39 +31,45 @@ with torch.no_grad():
 
         output = model(input.reshape((1, input.size(0),  input.size(1), input.size(2))))
 
-        _, avg_acc, cnt, pred = accuracy(output.detach().cpu().numpy(),targets.detach().cpu().numpy())
+        _, avg_acc, cnt, _ = accuracy(output.detach().cpu().numpy(),targets.detach().cpu().numpy())
 
-        pred_list = []
-        cat_list = []
+        pred, maxvals = get_max_preds(output.detach().cpu().numpy())
 
-        #for j, t in enumerate(output[0]):
-        #    t = t.detach().cpu().numpy()
-        #    
-        #    t = cv2.resize(t, (val_dataset.image_width, val_dataset.image_height))
-        #    t *= 255
-        #    t = np.floor(t)
-        #    t[np.where(t < 0)] = 0
-        #    t = np.array(t, dtype=np.uint8)
-        #    #plt.imshow(t)
-        #    #plt.show()
-        #    cv2.imshow("img", t)
-        #    cv2.waitKey(0) 
+        print("avg_acc : {}".format(avg_acc))
+
         image = []
         if flipped:
             image = val_dataset.get_filpbody_image(data_idx)
         else:
             image = val_dataset.get_preprocessed_image(data_idx)
-        
-        for t, p in enumerate(pred[0]):
-            print(p)
-            cv2.putText(image, str(t), (int(p[0] / val_dataset.heatmap_width * val_dataset.image_width), int(p[1] / val_dataset.heatmap_height * val_dataset.image_height)), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
 
-            cv2.circle(image,(int(p[0] / val_dataset.heatmap_width * val_dataset.image_width), int(p[1] / val_dataset.heatmap_height * val_dataset.image_height)), 1, (0, 0, 255), 1)
-
-            #cv2.rectangle(image, (20, 60), (120, 160), (0, 255, 0), 2)
-
+        pred_ints = []
+        for t, (p, v) in enumerate(zip(pred[0], maxvals[0])):
+            pred_int = (int(p[0] / val_dataset.heatmap_width * val_dataset.image_width), int(p[1] / val_dataset.heatmap_height * val_dataset.image_height))
+            cv2.putText(image, str(t), pred_int, cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
+            cv2.circle(image, pred_int, 1, (0, 0, 255), 1)
+            pred_ints.append(pred_int)
+        cv2.line(image, pred_ints[0],  pred_ints[1],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[0],  pred_ints[2],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[1],  pred_ints[3],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[2],  pred_ints[4],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[5],  pred_ints[6],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[11], pred_ints[12], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[6],  pred_ints[12], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[5],  pred_ints[11], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[6],  pred_ints[8],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[8],  pred_ints[10], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[5],  pred_ints[7],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[7],  pred_ints[9],  (255, 255, 0), 2)
+        cv2.line(image, pred_ints[12], pred_ints[14], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[14], pred_ints[16], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[11], pred_ints[13], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[13], pred_ints[15], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[16], pred_ints[18], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[16], pred_ints[20], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[16], pred_ints[22], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[15], pred_ints[17], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[15], pred_ints[19], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[15], pred_ints[21], (255, 255, 0), 2)
         cv2.imshow("img", image)
         cv2.waitKey(0) 
-
-        #if (i + 1) % print_freq == 0:
-        #    get_output_result(val_dataset, outputs, targets, data_idx, "val", 0, i + 1)
