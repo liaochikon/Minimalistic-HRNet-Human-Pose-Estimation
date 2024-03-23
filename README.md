@@ -57,7 +57,7 @@ ${Minimalistic-HRNet root}
 
 Done !
 
-## Pre-Train Weights
+## Pre-trained Weights
 ### COCO-WholeBody (Body keypoints with feet keypoints)
 
 Model parameter : base_channels=48, out_channels=23
@@ -65,7 +65,7 @@ Model parameter : base_channels=48, out_channels=23
 Download : 
  [Google Drive](https://drive.google.com/drive/folders/190Juu52TM1bvy0_T4b97BCygJrjZfp2G?usp=drive_link)
 
- After download the weight files, put them inside **weight** folder
+ After downloading the weight files, put them inside **weight** folder
  ```
 ${Minimalistic-HRNet root}
 ├── weight
@@ -162,7 +162,7 @@ The training heatmap log will be saved into the **log** folder.
 And weight file(.pth) will be saved into the **weight** folder.
 
 ## Testing
-Once you have weight files inside the **weight** folder and  COCO-WholeBody dataset in data folder, you can start test the model.
+Once you have weight files inside the **weight** folder and COCO-WholeBody dataset in data folder, you can start test the model.
 
  To start testing, just run **joint_train.py** :
 
