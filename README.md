@@ -75,7 +75,7 @@ ${Minimalistic-HRNet root}
 ```
 
 ### Halpe Full-Body (WIP)
-
+ (Coming soon...)
 
 ## Training
 ### Data Preparation (COCO-WholeBody)
@@ -162,7 +162,7 @@ The training heatmap log will be saved into the **log** folder.
 And weight file(.pth) will be saved into the **weight** folder.
 
 ## Testing
-Once you have weight files inside the **weight** folder, you can start test the model.
+Once you have weight files inside the **weight** folder and  COCO-WholeBody dataset in data folder, you can start test the model.
 
  To start testing, just run **joint_train.py** :
 
