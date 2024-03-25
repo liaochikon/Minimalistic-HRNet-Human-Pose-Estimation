@@ -9,13 +9,10 @@ HRNet's model structure and details can be found in the the link above.
 
 The main goal of this repo is to make HRNet as easy to use as possible and lightweight enough to implement in any project.
 
-![live_demo](image/live_demo.gif)
+Multi-human pose estimation result : 
+([Halpe Full-Body](https://github.com/Fang-Haoshu/Halpe-FullBody?tab=readme-ov-file "link") dataset)
 
-The dataset I'm using is [COCO-WholeBody](https://github.com/jin-s13/COCO-WholeBody "link"). The dataset in total has 133 keypoints (17 for body, 6 for feet, 68 for face and 42 for hands), but I'm only using body keypoints + feet keypoints for training.
-
-The current result is still a bit janky, especially in arm keypoints. 
-
-I'm planning to use another dataset ([Halpe Full-Body](https://github.com/Fang-Haoshu/Halpe-FullBody?tab=readme-ov-file "link")) and try to improve the model, so stay tuned for the next update!
+![live_demo](image/halpe_live_demo.gif)
 
 The repo has been tested in :
 ```
@@ -24,7 +21,6 @@ Python 3.8
 Pytorch 1.10.2
 ```
 
-
 ## Installation
 Install all the dependencies.
 
@@ -32,8 +28,6 @@ I recommend using a venv manager like Conda to setup your python environment.
 ```
 pip install -r requirements.txt
 ```
-
-
 
 Create three folders in root folder and name them  **data**, **log** and **weight**, then you should have a directory tree like this : 
 
@@ -63,19 +57,25 @@ Done !
 Model parameter : base_channels=48, out_channels=23
 
 Download : 
- [Google Drive](https://drive.google.com/drive/folders/190Juu52TM1bvy0_T4b97BCygJrjZfp2G?usp=drive_link)
+ [Google Drive](https://drive.google.com/drive/folders/1H7ECKgfVDxi1GwcwshIiD9I9jW2CDdnw?usp=drive_link)
 
- After downloading the weight files, put them inside **weight** folder
- ```
+
+
+### Halpe Full-Body (Body keypoints with feet keypoints)
+
+Model parameter : base_channels=48, out_channels=26
+
+Download : 
+ [Google Drive](https://drive.google.com/drive/folders/1dEMo5L3m4mX9iC8WcxgTqr7WZK7TPuDc?usp=drive_link)
+
+After downloading the weight files, put them inside **weight** folder
+```
 ${Minimalistic-HRNet root}
 ├── weight
     ├── best_acc.pth
     ├── best_loss.pth
 ...
 ```
-
-### Halpe Full-Body (WIP)
- (Coming soon...)
 
 ## Training
 ### Data Preparation (COCO-WholeBody)
@@ -123,23 +123,25 @@ ${Minimalistic-HRNet root}
 ### Configuration
 
 Inside **joint_train.py** in root folder, has a config section like this : 
+
 ```python
+#HalpeFullbody model train config
 ######################################### Model training config start:
 batch_size = 12
 device = "cuda"
 
-train_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_train_v1.0.json"
-train_imagepath = "data\\coco_wholebody\\train2017"
-val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
-val_imagepath = "data\\coco_wholebody\\val2017"
+train_annopath = "data\\halpe_fullbody\\annotations\\halpe_train_v1.json"
+train_imagepath = "data\\halpe_fullbody\\train2015"
+val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
+val_imagepath = "data\\halpe_fullbody\\val2017"
 
-resume_training = False
+resume_training = True
 resume_model_path = "weight/latest.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-train_dataset = COCOWholebody_BodyWithFeetAndPalm(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+train_dataset = Halpe_Fullbody(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
-val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
 lr = 0.001
@@ -149,6 +151,7 @@ base_channels = 48
 out_channels = train_dataset.num_joints
 ######################################### Model training config end.
 ```
+
 This is the place where you can define model's training parameter.
 
 If you want to start training, save the training parameters and simply run **joint_train.py** : 
@@ -162,7 +165,7 @@ The training heatmap log will be saved into the **log** folder.
 And weight file(.pth) will be saved into the **weight** folder.
 
 ## Testing
-Once you have weight files inside the **weight** folder and COCO-WholeBody dataset in data folder, you can start test the model.
+Once you have weight files inside the **weight** folder and datasets in data folder, you can start test the model.
 
  To start testing, just run **joint_train.py** :
 
@@ -171,24 +174,30 @@ python joint_test.py
 ```
 
 **joint_test.py** also has a config section, you can change some test setting here.
+
 ```python
+#HalpeFullbody model test config
 ######################################### Model test config start:
 batch_size = 1
 device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
-val_imagepath = "data\\coco_wholebody\\val2017"
-val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
-                                         image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
+val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
+val_imagepath = "data\\halpe_fullbody\\val2017"
+val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]), image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
-model = HRNet(base_channels=48, out_channels=23)
-model_dict = torch.load("weight/best_loss.pth")
+model = HRNet(base_channels=48, out_channels=26)
+model_dict = torch.load("weight/best_acc.pth")
 model.load_state_dict(model_dict['model_state_dict'])
 ######################################### Model test config end.
 ```
 
-![live_demo](image/test.png)
+Training result :  
+COCO-WholeBody(left), Halpe Full-Body(right)
+
+![live_demo](image/coco_test.png)   ![live_demo](image/halpe_test.png)
+
+
 
 
 
@@ -203,6 +212,7 @@ python live_demo.py
 Config section in **live_demo.py** :
 
 ```python
+#HalpeFullbody model config
 ######################################### Live demo config start:
 cap = cv2.VideoCapture(0) #You can change webcam or read prerecorded video in the line.
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -217,9 +227,13 @@ device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 T = transforms.Compose([transforms.ToTensor(), normalize])
 
-model = HRNet(base_channels=48, out_channels=23)
+model = HRNet(base_channels=48, out_channels=26)
 model_dict = torch.load("weight/best_acc.pth")
 ######################################### Live demo config end.
 ```
 
- [Demo video link](https://www.youtube.com/watch?v=J8gzc41t1eg&ab_channel=%E7%A8%8B "link")
+ [Demo video link (COCO-WholeBody)](https://www.youtube.com/watch?v=J8gzc41t1eg&ab_channel=%E7%A8%8B "link")
+
+  [Demo video link (Halpe-Fullbody)](https://www.youtube.com/watch?v=2UbfIj7v720&ab_channel=%E7%A8%8B "link")
+
+

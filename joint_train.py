@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from model import HRNet
-from dataset import COCOWholebody_BodyWithFeet
+from dataset import COCOWholebody_BodyWithFeet, Halpe_Fullbody
 from util.joint_loss import JointsMSELoss
 from util.joint_util import accuracy
 
@@ -96,22 +96,49 @@ def get_output_result(dataset, flipped, outputs, targets, data_idx, image_name, 
     plt.imshow(img_output, vmin=0, vmax=255)
     plt.savefig('log/' + image_name + '_' + str(epoch) + '_' + str(batch_num) + '.png', dpi=500)
 
+#COCOWholebody model train config
+########################################## Model training config start:
+#batch_size = 12
+#device = "cuda"
+#
+#train_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_train_v1.0.json"
+#train_imagepath = "data\\coco_wholebody\\train2017"
+#val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
+#val_imagepath = "data\\coco_wholebody\\val2017"
+#
+#resume_training = False
+#resume_model_path = "weight/latest.pth"
+#
+#normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+#train_dataset = COCOWholebody_BodyWithFeetAndPalm(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+#                                                    image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
+#val_dataset = COCOWholebody_BodyWithFeetAndPalm(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+#                                                    image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
+#
+#lr = 0.001
+#lr_step = [100, 170]
+#lr_factor = 0.1
+#base_channels = 48
+#out_channels = train_dataset.num_joints
+########################################## Model training config end.
+
+#HalpeFullbody model train config
 ######################################### Model training config start:
 batch_size = 12
 device = "cuda"
 
-train_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_train_v1.0.json"
-train_imagepath = "data\\coco_wholebody\\train2017"
-val_annopath = "data\\coco_wholebody\\annotations\\coco_wholebody_val_v1.0.json"
-val_imagepath = "data\\coco_wholebody\\val2017"
+train_annopath = "data\\halpe_fullbody\\annotations\\halpe_train_v1.json"
+train_imagepath = "data\\halpe_fullbody\\train2015"
+val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
+val_imagepath = "data\\halpe_fullbody\\val2017"
 
-resume_training = False
+resume_training = True
 resume_model_path = "weight/latest.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-train_dataset = COCOWholebody_BodyWithFeet(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+train_dataset = Halpe_Fullbody(train_annopath, train_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
-val_dataset = COCOWholebody_BodyWithFeet(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
+val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]),
                                                     image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
 lr = 0.001
@@ -170,7 +197,7 @@ if __name__ == "__main__":
     for epoch in range(model_dict['epoch'], 5000):
         print("epoch : " + str(epoch))
         print("current learn rate : {}".format(lr_scheduler.get_last_lr()))
-        model_dict['epoch'] = epoch
+        model_dict['epoch'] = epoch + 1
 
         train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 1000)
         model_dict['model_state_dict'] = model.module.state_dict()

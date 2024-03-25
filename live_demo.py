@@ -15,6 +15,7 @@ def get_affine(bbox, image_width, image_height):
     M = cv2.getAffineTransform(p1, p2)
     return M
 
+#HalpeFullbody model config
 ######################################### Live demo config start:
 cap = cv2.VideoCapture(0) #You can change webcam or read prerecorded video in the line.
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -29,7 +30,7 @@ device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 T = transforms.Compose([transforms.ToTensor(), normalize])
 
-model = HRNet(base_channels=48, out_channels=23)
+model = HRNet(base_channels=48, out_channels=26)
 model_dict = torch.load("weight/best_acc.pth")
 ######################################### Live demo config end.
 
@@ -75,7 +76,7 @@ while True:
         for i, (p, v) in enumerate(zip(pred, maxval)):
             #if v[0] < 0.3:
             #    continue
-            #cv2.putText(frame, str(i), (int(p[0]), int(p[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
+            cv2.putText(frame, str(i), (int(p[0]), int(p[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
             cv2.circle(frame,(int(p[0]), int(p[1])), 1, (0, 0, 255), 2)
         pred_int = pred.astype(int)
         cv2.line(frame, pred_int[0], pred_int[1],   (255, 255, 0), 2)
@@ -84,8 +85,6 @@ while True:
         cv2.line(frame, pred_int[2], pred_int[4],   (255, 255, 0), 2)
         cv2.line(frame, pred_int[5], pred_int[6],   (255, 255, 0), 2)
         cv2.line(frame, pred_int[11], pred_int[12], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[6], pred_int[12],  (255, 255, 0), 2)
-        cv2.line(frame, pred_int[5], pred_int[11],  (255, 255, 0), 2)
         cv2.line(frame, pred_int[6], pred_int[8],   (255, 255, 0), 2)
         cv2.line(frame, pred_int[8], pred_int[10],  (255, 255, 0), 2)
         cv2.line(frame, pred_int[5], pred_int[7],   (255, 255, 0), 2)
@@ -94,12 +93,18 @@ while True:
         cv2.line(frame, pred_int[14], pred_int[16], (255, 255, 0), 2)
         cv2.line(frame, pred_int[11], pred_int[13], (255, 255, 0), 2)
         cv2.line(frame, pred_int[13], pred_int[15], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[16], pred_int[18], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[16], pred_int[20], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[16], pred_int[22], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[15], pred_int[17], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[15], pred_int[19], (255, 255, 0), 2)
-        cv2.line(frame, pred_int[15], pred_int[21], (255, 255, 0), 2)
+
+        cv2.line(frame, pred_int[0], pred_int[17], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[0], pred_int[18], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[18], pred_int[19], (255, 255, 0), 2)
+
+        cv2.line(frame, pred_int[15], pred_int[24], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[15], pred_int[22], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[15], pred_int[20], (255, 255, 0), 2)
+
+        cv2.line(frame, pred_int[16], pred_int[25], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[16], pred_int[23], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[16], pred_int[21], (255, 255, 0), 2)
         
         
     cv2.imshow("img", frame)
