@@ -122,7 +122,7 @@ def get_output_result(dataset, flipped, outputs, targets, data_idx, image_name, 
 #out_channels = train_dataset.num_joints
 ########################################## Model training config end.
 
-#HalpeFullbody model train config
+#HalpeFullbody(with palm) model train config
 ######################################### Model training config start:
 batch_size = 12
 device = "cuda"
@@ -131,6 +131,9 @@ train_annopath = "data\\halpe_fullbody\\annotations\\halpe_train_v1.json"
 train_imagepath = "data\\halpe_fullbody\\train2015"
 val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
 val_imagepath = "data\\halpe_fullbody\\val2017"
+
+use_pre_trained_model = False
+pre_trained_model_path = "weight/best_acc.pth"
 
 resume_training = True
 resume_model_path = "weight/latest.pth"
@@ -185,6 +188,9 @@ if __name__ == "__main__":
         model = torch.nn.DataParallel(model, device_ids=(0,)).cuda()
         optimizer.load_state_dict(model_dict['optimizer_state_dict'])
     else:
+        if use_pre_trained_model:
+            model_dict = torch.load(pre_trained_model_path)
+            model.load_state_dict(model_dict['model_state_dict'])
         model = torch.nn.DataParallel(model, device_ids=(0,)).cuda()
 
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
@@ -197,11 +203,11 @@ if __name__ == "__main__":
     for epoch in range(model_dict['epoch'], 5000):
         print("epoch : " + str(epoch))
         print("current learn rate : {}".format(lr_scheduler.get_last_lr()))
-        model_dict['epoch'] = epoch + 1
-
+        
         train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 1000)
         model_dict['model_state_dict'] = model.module.state_dict()
         model_dict['optimizer_state_dict'] = optimizer.state_dict()
+        model_dict['epoch'] = epoch + 1
 
         if train_acc > model_dict['best_train_accuracy']:
             model_dict['best_train_accuracy'] = train_acc

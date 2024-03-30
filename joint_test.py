@@ -21,7 +21,7 @@ import cv2
 #model.load_state_dict(model_dict['model_state_dict'])
 ########################################## Model test config end.
 
-#HalpeFullbody model test config
+#HalpeFullbody(with plam) model test config
 ######################################### Model test config start:
 batch_size = 1
 device = "cuda"
@@ -31,7 +31,7 @@ val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
 val_imagepath = "data\\halpe_fullbody\\val2017"
 val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]), image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
-model = HRNet(base_channels=48, out_channels=26)
+model = HRNet(base_channels=48, out_channels=30)
 model_dict = torch.load("weight/best_acc.pth")
 model.load_state_dict(model_dict['model_state_dict'])
 ######################################### Model test config end.
@@ -88,5 +88,9 @@ with torch.no_grad():
         cv2.line(image, pred_ints[16], pred_ints[25], (255, 255, 0), 2)
         cv2.line(image, pred_ints[16], pred_ints[23], (255, 255, 0), 2)
         cv2.line(image, pred_ints[16], pred_ints[21], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[10], pred_ints[26], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[10], pred_ints[28], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[9],  pred_ints[27], (255, 255, 0), 2)
+        cv2.line(image, pred_ints[9],  pred_ints[29], (255, 255, 0), 2)
         cv2.imshow("img", image)
         cv2.waitKey(0) 

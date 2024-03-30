@@ -15,7 +15,7 @@ def get_affine(bbox, image_width, image_height):
     M = cv2.getAffineTransform(p1, p2)
     return M
 
-#HalpeFullbody model config
+#HalpeFullbody(with palm) model config
 ######################################### Live demo config start:
 cap = cv2.VideoCapture(0) #You can change webcam or read prerecorded video in the line.
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -30,7 +30,7 @@ device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 T = transforms.Compose([transforms.ToTensor(), normalize])
 
-model = HRNet(base_channels=48, out_channels=26)
+model = HRNet(base_channels=48, out_channels=30)
 model_dict = torch.load("weight/best_acc.pth")
 ######################################### Live demo config end.
 
@@ -43,14 +43,16 @@ faster_rcnn.eval().to(device)
 
 while True:
     ret, frame = cap.read()
+    cv2.normalize(frame, frame, 0, 230, cv2.NORM_MINMAX)
+
     boxes, classes, labels = faster_rcnn_predict(frame, faster_rcnn, device, 0.8)
     frame, p_boxes = person_boxes(boxes, labels, frame)
 
-    results = {'preds' : [], 'maxvals' : []}
+    results = {'preds' : [], 'maxvals' : [], 'bbox' : []}
     for p, p_box in enumerate(p_boxes):
         w = p_box[2] - p_box[0]
         h = p_box[3] - p_box[1]
-        scale = max([w / image_width, h / image_height]) * 1.2
+        scale = max([w / image_width, h / image_height]) * 1.4
         center = (p_box[0] + w / 2, p_box[1] + h / 2)
         clean_bbox_topleft = (center[0] - image_width / 2 * scale, center[1] - image_height / 2 * scale)
         clean_bbox = [clean_bbox_topleft[0], clean_bbox_topleft[1], image_width * scale, image_height * scale]
@@ -61,7 +63,7 @@ while True:
 
         outputs = model(image_transformed.reshape((1, image_transformed.size(0),  image_transformed.size(1), image_transformed.size(2))))
 
-        preds, maxvals = get_max_preds(outputs.detach().cpu().numpy())
+        preds, maxvals = get_avg_preds(outputs.detach().cpu().numpy(), 0.1)
         preds = preds[0]
         maxvals = maxvals[0]
         preds[:, 0] *= image_width / heatmap_width
@@ -71,13 +73,17 @@ while True:
         preds[:, 1] += clean_bbox_topleft[1]
         results['preds'].append(preds)
         results['maxvals'].append(maxvals)
+        results['bbox'].append(clean_bbox)
 
-    for person_num, (pred, maxval) in enumerate(zip(results['preds'], results['maxvals'])):
+    for person_num, (pred, maxval, bbox) in enumerate(zip(results['preds'], results['maxvals'], results['bbox'])):
+        cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3])), (255, 0, 0), 2)
         for i, (p, v) in enumerate(zip(pred, maxval)):
-            #if v[0] < 0.3:
-            #    continue
-            cv2.putText(frame, str(i), (int(p[0]), int(p[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
-            cv2.circle(frame,(int(p[0]), int(p[1])), 1, (0, 0, 255), 2)
+            if v[0] == 0:
+                cv2.putText(frame, str(i), (int(p[0]), int(p[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 1)
+                cv2.circle(frame,(int(p[0]), int(p[1])), 1, (0, 0, 255), 2)
+                continue
+            cv2.putText(frame, str(i), (int(p[0]), int(p[1])), cv2.FONT_HERSHEY_PLAIN, 1, (0, 255, 0), 1)
+            cv2.circle(frame,(int(p[0]), int(p[1])), 1, (0, 255, 0), 2)
         pred_int = pred.astype(int)
         cv2.line(frame, pred_int[0], pred_int[1],   (255, 255, 0), 2)
         cv2.line(frame, pred_int[0], pred_int[2],   (255, 255, 0), 2)
@@ -105,7 +111,15 @@ while True:
         cv2.line(frame, pred_int[16], pred_int[25], (255, 255, 0), 2)
         cv2.line(frame, pred_int[16], pred_int[23], (255, 255, 0), 2)
         cv2.line(frame, pred_int[16], pred_int[21], (255, 255, 0), 2)
+
+        cv2.line(frame, pred_int[10], pred_int[26], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[10], pred_int[28], (255, 255, 0), 2)
+
+        cv2.line(frame, pred_int[9], pred_int[27], (255, 255, 0), 2)
+        cv2.line(frame, pred_int[9], pred_int[29], (255, 255, 0), 2)
+
+
         
-        
-    cv2.imshow("img", frame)
+    
+    cv2.imshow("img", cv2.resize(frame, (1920, 1080)))
     cv2.waitKey(1) 

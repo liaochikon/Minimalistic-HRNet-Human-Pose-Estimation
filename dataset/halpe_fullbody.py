@@ -8,7 +8,7 @@ import random
 
 class Halpe_Fullbody(Dataset):
     def __init__(self, anno_path, image_root_path,
-                 num_joints = 26,
+                 num_joints = 30,
                  image_height = 384, image_width = 288,
                  heatmap_height = 96, heatmap_width = 72, heatmap_sigma = 2,
                  flip_prob = 0.5,
@@ -28,7 +28,7 @@ class Halpe_Fullbody(Dataset):
         self._COCO = COCO(anno_path)
         self.raw_image_ids = list(self._COCO.imgs.keys())
 
-        self.flip_joints_order = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 17, 18, 19, 21, 20, 23, 22, 25, 24]
+        self.flip_joints_order = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 17, 18, 19, 21, 20, 23, 22, 25, 24, 27, 26, 29, 28]
 
         self.image_ids = []
         self.image_paths = []
@@ -58,7 +58,9 @@ class Halpe_Fullbody(Dataset):
                 image_affine = self.get_affine(clean_bbox)
 
                 fullbody_keypoints = np.array(person_anno['keypoints'], dtype=np.float).reshape((-1, 3))
-                fullbody_keypoints = fullbody_keypoints[:26]
+                fullbody_keypoints = np.array([*fullbody_keypoints[:26], 
+                                               fullbody_keypoints[115 + 5],fullbody_keypoints[94 + 5], 
+                                               fullbody_keypoints[115 + 17], fullbody_keypoints[94 + 17]]).reshape((-1, 3))
 
                 joints = fullbody_keypoints.copy()
                 joints[:, 2] = np.zeros(self.num_joints, dtype=np.float)

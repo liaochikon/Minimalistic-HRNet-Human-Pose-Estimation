@@ -1,4 +1,11 @@
 # Minimalistic-HRNet
+
+## Update
+2024/03/30 : Add new way to predict keypoints from heatmaps (average method)
+
+2024/03/29 : [Halpe Full-Body](https://github.com/Fang-Haoshu/Halpe-FullBody?tab=readme-ov-file "link") pre-trained weight now has palm keypoints.
+
+2024/03/24 : [Halpe Full-Body](https://github.com/Fang-Haoshu/Halpe-FullBody?tab=readme-ov-file "link") dataset is now supported.
  
 ## Introduction
 This repo is a lightweight pytorch implementation of the paper : [High-Resolution Representations for Labeling Pixels and Regions](https://arxiv.org/abs/1904.04514 "link")
@@ -61,9 +68,9 @@ Download :
 
 
 
-### Halpe Full-Body (Body keypoints with feet keypoints)
+### Halpe Full-Body (Body keypoints with feet keypoints and palm keypoints)
 
-Model parameter : base_channels=48, out_channels=26
+Model parameter : base_channels=48, out_channels=30
 
 Download : 
  [Google Drive](https://drive.google.com/drive/folders/1dEMo5L3m4mX9iC8WcxgTqr7WZK7TPuDc?usp=drive_link)
@@ -125,7 +132,7 @@ ${Minimalistic-HRNet root}
 Inside **joint_train.py** in root folder, has a config section like this : 
 
 ```python
-#HalpeFullbody model train config
+#HalpeFullbody(with palm) model train config
 ######################################### Model training config start:
 batch_size = 12
 device = "cuda"
@@ -134,6 +141,9 @@ train_annopath = "data\\halpe_fullbody\\annotations\\halpe_train_v1.json"
 train_imagepath = "data\\halpe_fullbody\\train2015"
 val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
 val_imagepath = "data\\halpe_fullbody\\val2017"
+
+use_pre_trained_model = False
+pre_trained_model_path = "weight/best_acc.pth"
 
 resume_training = True
 resume_model_path = "weight/latest.pth"
@@ -176,7 +186,7 @@ python joint_test.py
 **joint_test.py** also has a config section, you can change some test setting here.
 
 ```python
-#HalpeFullbody model test config
+#HalpeFullbody(with plam) model test config
 ######################################### Model test config start:
 batch_size = 1
 device = "cuda"
@@ -186,7 +196,7 @@ val_annopath = "data\\halpe_fullbody\\annotations\\halpe_val_v1.json"
 val_imagepath = "data\\halpe_fullbody\\val2017"
 val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.Compose([transforms.ToTensor(), normalize]), image_height=384, image_width=288, heatmap_height=96, heatmap_width=72)
 
-model = HRNet(base_channels=48, out_channels=26)
+model = HRNet(base_channels=48, out_channels=30)
 model_dict = torch.load("weight/best_acc.pth")
 model.load_state_dict(model_dict['model_state_dict'])
 ######################################### Model test config end.
@@ -212,7 +222,7 @@ python live_demo.py
 Config section in **live_demo.py** :
 
 ```python
-#HalpeFullbody model config
+#HalpeFullbody(with palm) model config
 ######################################### Live demo config start:
 cap = cv2.VideoCapture(0) #You can change webcam or read prerecorded video in the line.
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -227,13 +237,13 @@ device = "cuda"
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 T = transforms.Compose([transforms.ToTensor(), normalize])
 
-model = HRNet(base_channels=48, out_channels=26)
+model = HRNet(base_channels=48, out_channels=30)
 model_dict = torch.load("weight/best_acc.pth")
 ######################################### Live demo config end.
 ```
 
  [Demo video link (COCO-WholeBody)](https://www.youtube.com/watch?v=J8gzc41t1eg&ab_channel=%E7%A8%8B "link")
 
-  [Demo video link (Halpe-Fullbody)](https://www.youtube.com/watch?v=2UbfIj7v720&ab_channel=%E7%A8%8B "link")
+  [Demo video link (Halpe-Fullbody)](https://youtu.be/ugm7kldJTds "link")
 
 

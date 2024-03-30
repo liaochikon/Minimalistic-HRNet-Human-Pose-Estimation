@@ -30,6 +30,37 @@ def get_max_preds(batch_heatmaps):
     preds *= pred_mask
     return preds, maxvals
 
+def get_avg_preds(batch_heatmaps, threshold = 0.3):
+    preds = []
+    maxvals = []
+    for heatmaps in batch_heatmaps:
+        heatmap_preds = []
+        heatmap_maxvals = []
+        for heatmap in heatmaps:
+            valid_elements = np.array(np.where(heatmap > threshold)).T
+            if len(valid_elements) == 0:
+                heatmap_preds.append([0.0, 0.0])
+                heatmap_maxvals.append([0])
+                continue
+
+            weights = []
+            for valid_element in valid_elements:
+                weights.append(heatmap[valid_element[0]][valid_element[1]])
+            heatmap_maxval = max(weights)
+            weights = np.array(weights) / sum(weights)
+
+            pred_x = 0
+            pred_y = 0
+            for valid_element, weight in zip(valid_elements, weights):
+                pred_x += weight * valid_element[1]
+                pred_y += weight * valid_element[0]
+
+            heatmap_preds.append([pred_x, pred_y])
+            heatmap_maxvals.append([heatmap_maxval])
+        preds.append(heatmap_preds)
+        maxvals.append(heatmap_maxvals)
+    return np.array(preds), np.array(maxvals)
+
 def calc_dists(preds, target, normalize):
     preds = preds.astype(np.float32)
     target = target.astype(np.float32)
