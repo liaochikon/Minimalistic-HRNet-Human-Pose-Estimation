@@ -19,7 +19,7 @@ The main goal of this repo is to make HRNet as easy to use as possible and light
 Multi-human pose estimation result : 
 ([Halpe Full-Body](https://github.com/Fang-Haoshu/Halpe-FullBody?tab=readme-ov-file "link") dataset)
 
-![live_demo](image/halpe_live_demo.gif)
+![live_demo](image/halpe_live_demo_new.gif)
 
 The repo has been tested in :
 ```
