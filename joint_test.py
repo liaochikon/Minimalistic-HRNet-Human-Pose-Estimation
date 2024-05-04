@@ -33,6 +33,8 @@ val_dataset = Halpe_Fullbody(val_annopath, val_imagepath, transforms=transforms.
 
 model = HRNet(base_channels=48, out_channels=30)
 model_dict = torch.load("weight/best_acc.pth")
+print(model_dict['best_val_accuracy'])
+print(model_dict['best_val_loss'])
 model.load_state_dict(model_dict['model_state_dict'])
 ######################################### Model test config end.
 
