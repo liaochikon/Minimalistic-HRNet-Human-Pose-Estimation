@@ -13,7 +13,7 @@ def train(model, train_dataset, train_loader, criterion, optimizer, epoch, print
     model.train()
     train_acc_list = []
     train_loss_list = []
-    for i, (input, targets, target_weights, data_idx, flipped) in enumerate(train_loader):
+    for i, (input, targets, target_weights, misc) in enumerate(train_loader):
         targets = targets.cuda(non_blocking=True)
         target_weights = target_weights.cuda(non_blocking=True)
 
@@ -31,7 +31,7 @@ def train(model, train_dataset, train_loader, criterion, optimizer, epoch, print
         
         if (i + 1) % print_freq == 0:
             print("training... [{} / {}]( loss : {}, accuracy : {})".format(len(train_loader), i + 1, loss.item(), avg_acc))
-            get_output_result(train_dataset, flipped, outputs, targets, data_idx, "train", epoch, i + 1)
+            get_output_result(train_dataset, misc['flipped'], outputs, targets, misc['idx'], "train", epoch, i + 1)
 
     train_acc = sum(train_acc_list) / len(train_acc_list)
     train_loss = sum(train_loss_list) / len(train_loss_list)
@@ -43,7 +43,7 @@ def val(model, val_dataset, val_loader, criterion, epoch, print_freq):
     val_acc_list = []
     val_loss_list = []
     with torch.no_grad():
-        for i, (input, targets, target_weights, data_idx, flipped) in enumerate(val_loader):
+        for i, (input, targets, target_weights, misc) in enumerate(val_loader):
             targets = targets.cuda(non_blocking=True)
             target_weights = target_weights.cuda(non_blocking=True)
 
@@ -57,7 +57,7 @@ def val(model, val_dataset, val_loader, criterion, epoch, print_freq):
 
             if (i + 1) % print_freq == 0:
                 print("validating... [{} / {}]( loss : {}, accuracy : {})".format(len(val_loader), i + 1, loss.item(), avg_acc))
-                get_output_result(val_dataset, flipped, outputs, targets, data_idx, "val", epoch, i + 1)
+                get_output_result(val_dataset, misc['flipped'], outputs, targets, misc['idx'], "val", epoch, i + 1)
 
     val_acc = sum(val_acc_list) / len(val_acc_list)
     val_loss = sum(val_loss_list) / len(val_loss_list)
@@ -204,7 +204,7 @@ if __name__ == "__main__":
         print("epoch : " + str(epoch))
         print("current learn rate : {}".format(lr_scheduler.get_last_lr()))
         
-        train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 1000)
+        train_loss, train_acc = train(model, train_dataset, train_loader, criterion, optimizer, epoch, 1)
         model_dict['model_state_dict'] = model.module.state_dict()
         model_dict['optimizer_state_dict'] = optimizer.state_dict()
         model_dict['epoch'] = epoch + 1
@@ -219,7 +219,7 @@ if __name__ == "__main__":
         print("current train loss : {}, current train accuracy : {})".format(train_loss, train_acc))
         print("best train loss : {}, best train accuracy : {})".format(model_dict['best_train_loss'], model_dict['best_train_accuracy']))
 
-        val_loss, val_acc = val(model, val_dataset, val_loader, criterion, epoch, 200)
+        val_loss, val_acc = val(model, val_dataset, val_loader, criterion, epoch, 1)
         if val_acc > model_dict['best_val_accuracy']:
             model_dict['best_val_accuracy'] = val_acc
             torch.save(model_dict, "weight/best_acc.pth")

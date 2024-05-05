@@ -205,12 +205,18 @@ class Halpe_Fullbody(Dataset):
         targets, target_weights = self.generate_heatmap_from_joints(joints, joint_vis, self.heatmap_sigma)
 
         if self._transforms:
-            image_preprocess = self._transforms(image_preprocess)
+            image_transforms = self._transforms(image_preprocess)
 
         targets = torch.from_numpy(targets)
         target_weights = torch.from_numpy(target_weights)
+
+        misc = {'image_preprocess' : image_preprocess,
+                'idx' : idx,
+                'flipped' : flipped,
+                'joints' : joints,
+                'joint_vis' : joint_vis}
         
-        return image_preprocess, targets, target_weights, idx, flipped
+        return image_transforms, targets, target_weights, misc
 
     def __len__(self):
         return len(self.image_ids)

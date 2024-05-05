@@ -1,6 +1,8 @@
 # Minimalistic-HRNet
 
 ## Update
+2024/05/05 : [CMU Hand Dataset](http://domedb.perception.cs.cmu.edu/handdb.html "link") is now supported.
+
 2024/03/30 : Add new way to predict keypoints from heatmaps (average method)
 
 2024/03/29 : [Halpe Full-Body](https://github.com/Fang-Haoshu/Halpe-FullBody?tab=readme-ov-file "link") pre-trained weight now has palm keypoints.

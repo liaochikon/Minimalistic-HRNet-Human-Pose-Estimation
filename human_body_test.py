@@ -44,7 +44,7 @@ best_val_acc = 0.0
 model.eval()
 print_freq = 10
 with torch.no_grad():
-    for i, (input, targets, _, data_idx, flipped) in enumerate(val_dataset):
+    for i, (input, targets, _, misc) in enumerate(val_dataset):
         targets = targets.reshape((1, targets.size(0),  targets.size(1), targets.size(2))).cuda(non_blocking=True)
 
         output = model(input.reshape((1, input.size(0),  input.size(1), input.size(2))))
@@ -56,10 +56,10 @@ with torch.no_grad():
         print("avg_acc : {}".format(avg_acc))
 
         image = []
-        if flipped:
-            image = val_dataset.get_filpbody_image(data_idx)
+        if misc['flipped']:
+            image = val_dataset.get_filpbody_image(misc['idx'])
         else:
-            image = val_dataset.get_preprocessed_image(data_idx)
+            image = val_dataset.get_preprocessed_image(misc['idx'])
 
         pred_ints = []
         for t, (p, v) in enumerate(zip(pred[0], maxvals[0])):

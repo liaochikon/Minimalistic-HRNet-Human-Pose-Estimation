@@ -1,2 +1,4 @@
 from dataset.cocowholebody_bodywithfeet import COCOWholebody_BodyWithFeet
 from dataset.halpe_fullbody import Halpe_Fullbody
+from dataset.cmu_hand_manual import CMU_Hand_Manual
+from dataset.cmu_panopticdb import CMU_Panopticdb

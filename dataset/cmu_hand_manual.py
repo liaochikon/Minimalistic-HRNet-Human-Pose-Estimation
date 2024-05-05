@@ -1,21 +1,20 @@
 import torch
 from torch.utils.data import Dataset
-from pycocotools.coco import COCO
 import numpy as np
 import cv2
 import os
+import json
 import random
 
-class COCOWholebody_BodyWithFeet(Dataset):
-    def __init__(self, anno_path, image_root_path,
-                 num_joints = 23,
-                 image_height = 384, image_width = 288,
-                 heatmap_height = 96, heatmap_width = 72, heatmap_sigma = 2,
+class CMU_Hand_Manual(Dataset):
+    def __init__(self, root_path,
+                 num_joints = 21,
+                 image_height = 288, image_width = 288,
+                 heatmap_height = 72, heatmap_width = 72, heatmap_sigma = 2,
                  flip_prob = 0.5,
                  transforms = None):
         
-        self.anno_path = anno_path
-        self.image_root_path = image_root_path
+        self.root_path = root_path
         self.num_joints = num_joints
         self.image_height = image_height
         self.image_width = image_width
@@ -24,12 +23,7 @@ class COCOWholebody_BodyWithFeet(Dataset):
         self.heatmap_sigma = heatmap_sigma
         self.flip_prob = flip_prob
         self._transforms = transforms
-
-        self._COCO = COCO(anno_path)
-        self.raw_image_ids = list(self._COCO.imgs.keys())
-
-        self.flip_joints_order = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 18, 17, 20, 19, 22, 21]
-
+        
         self.image_ids = []
         self.image_paths = []
         self.image_affines = []
@@ -37,59 +31,61 @@ class COCOWholebody_BodyWithFeet(Dataset):
         self.clean_bbox_list = []
         self.joints_list = []
         self.joint_vis_list = []
-        for raw_image_id in self.raw_image_ids:
-            anno_ids = self._COCO.getAnnIds(imgIds=raw_image_id)
-            image_path = self._COCO.loadImgs(raw_image_id)[0]['file_name']
-            image_path = os.path.join(self.image_root_path, image_path)
-            people_anno = self._COCO.loadAnns(anno_ids)
+        self.is_left_list = []
 
-            if len(people_anno) == 0:
+        for json_name in os.listdir(self.root_path):
+            if json_name.endswith(".json") == False:
                 continue
 
-            for person_anno in people_anno:
-                if person_anno['num_keypoints'] == 0:
-                    continue
-                if person_anno['foot_valid'] == 0:
-                    continue
+            raw_image_id = json_name[:-5] + ".jpg"
+            image_path = os.path.join(self.root_path, raw_image_id)
+            if os.path.isfile(image_path) == False:
+                continue
 
-                bbox = person_anno['bbox']
-                scale = max([bbox[2] / self.image_width, bbox[3] / self.image_height])
-                center = (bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2)
-                clean_bbox_topleft = (center[0] - self.image_width / 2 * scale, center[1] - self.image_height / 2 * scale)
-                clean_bbox = [clean_bbox_topleft[0], clean_bbox_topleft[1], self.image_width * scale, self.image_height * scale]
-                image_affine = self.get_affine(clean_bbox)
+            json_dict = {}
+            json_path = os.path.join(self.root_path, json_name)
+            with open(json_path, "r") as readfile:
+                json_dict = json.load(readfile)
 
-                body_keypoints = person_anno['keypoints']
-                feet_keypoints = np.array(person_anno['foot_kpts']).reshape((6, 3))
+            hand_keypoints = np.array(json_dict['hand_pts'], dtype=np.float)
+            joints = hand_keypoints.copy()
+            joints[:, 2] = np.zeros(self.num_joints, dtype=np.float)
+            joint_vis = np.zeros((self.num_joints, 3), dtype=np.float)
 
-                keypoints = np.array([*body_keypoints, 
-                                      *feet_keypoints[0], *feet_keypoints[3], 
-                                      *feet_keypoints[1], *feet_keypoints[4], 
-                                      *feet_keypoints[2], *feet_keypoints[5]], dtype=np.float)
+            valid_hand_keypoints = []
+            for i, target_vis in enumerate(hand_keypoints[:, 2]):
+                if target_vis > 0:
+                    joint_vis[i][0] = 1.0
+                    joint_vis[i][1] = 1.0
+                    joint_vis[i][2] = 0.0
+                    valid_hand_keypoints.append(hand_keypoints[i])
+                else:
+                    joint_vis[i][0] = 0.0
+                    joint_vis[i][1] = 0.0
+                    joint_vis[i][2] = 0.0
+            valid_hand_keypoints = np.array(valid_hand_keypoints)
+            
+            x1 = min(valid_hand_keypoints[:, 0])
+            y1 = min(valid_hand_keypoints[:, 1])
+            x2 = max(valid_hand_keypoints[:, 0])
+            y2 = max(valid_hand_keypoints[:, 1])
+            bbox = (x1, y1, x2 - x1, y2 - y1)
+            scale = max([bbox[2] / self.image_width, bbox[3] / self.image_height]) + 0.2
+            center = (bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2)
+            clean_bbox_topleft = (center[0] - self.image_width / 2 * scale, center[1] - self.image_height / 2 * scale)
+            clean_bbox = [clean_bbox_topleft[0], clean_bbox_topleft[1], self.image_width * scale, self.image_height * scale]
+            image_affine = self.get_affine(clean_bbox)
 
-                keypoints = keypoints.reshape((-1, 3))
+            is_left = json_dict['is_left']
 
-                joints = keypoints.copy()
-                joints[:, 2] = np.zeros(self.num_joints, dtype=np.float)
-
-                joint_vis = np.zeros((self.num_joints, 3), dtype=np.float)
-                for i, target_vis in enumerate(keypoints[:, 2]):
-                    if target_vis > 1:
-                        joint_vis[i][0] = 1.0
-                        joint_vis[i][1] = 1.0
-                        joint_vis[i][2] = 0.0
-                    else:
-                        joint_vis[i][0] = 0.0
-                        joint_vis[i][1] = 0.0
-                        joint_vis[i][2] = 0.0
-
-                self.image_ids.append(raw_image_id)
-                self.image_paths.append(image_path)
-                self.image_affines.append(image_affine)
-                self.bbox_list.append(bbox)
-                self.clean_bbox_list.append(clean_bbox)
-                self.joints_list.append(joints)
-                self.joint_vis_list.append(joint_vis)
+            self.image_ids.append(raw_image_id)
+            self.image_paths.append(image_path)
+            self.image_affines.append(image_affine)
+            self.bbox_list.append(bbox)
+            self.clean_bbox_list.append(clean_bbox)
+            self.joints_list.append(joints)
+            self.joint_vis_list.append(joint_vis)
+            self.is_left_list.append(is_left)
 
     def get_affine(self, bbox):
         p1 = np.float32([[int(bbox[0]), int(bbox[1])],[int(bbox[0] + bbox[2]), int(bbox[1])],[int(bbox[0]), int(bbox[1] + bbox[3])]])
@@ -164,12 +160,10 @@ class COCOWholebody_BodyWithFeet(Dataset):
 
         joints[:, 0] *= -1 
         joints[:, 0] += self.image_width
-        joints = joints[self.flip_joints_order]
         return joints
     
     def get_filpbody_joint_vis(self, idx):
         joint_vis = self.joint_vis_list[idx].copy()
-        joint_vis = joint_vis[self.flip_joints_order]
         return joint_vis
 
     def get_preprocessed_image(self, idx):
@@ -213,7 +207,6 @@ class COCOWholebody_BodyWithFeet(Dataset):
 
         if self._transforms:
             image_transforms = self._transforms(image_preprocess)
-
         targets = torch.from_numpy(targets)
         target_weights = torch.from_numpy(target_weights)
 
