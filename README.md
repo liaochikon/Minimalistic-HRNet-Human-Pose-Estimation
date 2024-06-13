@@ -1,7 +1,7 @@
 # Minimalistic-HRNet
 
 ## Update
-2024/05/05 : [CMU Hand Dataset](http://domedb.perception.cs.cmu.edu/handdb.html "link") is now supported.
+2024/05/05 : [CMU Hand Dataset](http://domedb.perception.cs.cmu.edu/handdb.html "link") is now supported (Check **Training** section for more info).
 
 2024/03/30 : Add new way to predict keypoints from heatmaps (average method)
 

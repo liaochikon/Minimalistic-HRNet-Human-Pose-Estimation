@@ -31,7 +31,7 @@ def train(model, train_dataset, train_loader, criterion, optimizer, epoch, print
         
         if (i + 1) % print_freq == 0:
             print("training... [{} / {}]( loss : {}, accuracy : {})".format(len(train_loader), i + 1, loss.item(), avg_acc))
-            get_output_result(train_dataset, misc['flipped'], outputs, targets, misc['idx'], "train", epoch, i + 1)
+            get_output_result(outputs, targets, misc['image_preprocess'], "train", epoch, i + 1)
 
     train_acc = sum(train_acc_list) / len(train_acc_list)
     train_loss = sum(train_loss_list) / len(train_loss_list)
@@ -57,22 +57,17 @@ def val(model, val_dataset, val_loader, criterion, epoch, print_freq):
 
             if (i + 1) % print_freq == 0:
                 print("validating... [{} / {}]( loss : {}, accuracy : {})".format(len(val_loader), i + 1, loss.item(), avg_acc))
-                get_output_result(val_dataset, misc['flipped'], outputs, targets, misc['idx'], "val", epoch, i + 1)
+                get_output_result(outputs, targets, misc['image_preprocess'], "val", epoch, i + 1)
 
     val_acc = sum(val_acc_list) / len(val_acc_list)
     val_loss = sum(val_loss_list) / len(val_loss_list)
 
     return val_loss, val_acc
 
-def get_output_result(dataset, flipped, outputs, targets, data_idx, image_name, epoch, batch_num):
+def get_output_result(outputs, targets, imgs, image_name, epoch, batch_num):
     img_output = []
-    for i, (output, target, data_id) in enumerate(zip(outputs, targets, data_idx)):
-        img = []
-        if flipped[i]:
-            img = dataset.get_filpbody_image(data_id)
-        else:
-            img = dataset.get_preprocessed_image(data_id)
-        resized_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) / 2
+    for i, (output, target, img) in enumerate(zip(outputs, targets, imgs)):
+        resized_gray = cv2.cvtColor(img.numpy(), cv2.COLOR_BGR2GRAY) / 2
         #img_concat = resized_gray
         target_concat = resized_gray
         output_concat = resized_gray
@@ -101,8 +96,8 @@ def get_output_result(dataset, flipped, outputs, targets, data_idx, image_name, 
 batch_size = 12
 device = "cuda"
 
-train_root_path = "data\\cmu_panopticdb"
-val_root_path = "data\\cmu_hand_manual"
+train_root_path = "data\\cmu_hand_manual\\train"
+val_root_path = "data\\cmu_hand_manual\\val"
 
 use_pre_trained_model = False
 pre_trained_model_path = "weight/latest.pth"
@@ -111,8 +106,8 @@ resume_training = False
 resume_model_path = "weight/best_loss.pth"
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-train_dataset = CMU_Panopticdb(train_root_path, flip_prob=0.4, transforms=transforms.Compose([transforms.ToTensor(), normalize]))
-val_dataset = CMU_Hand_Manual(val_root_path, flip_prob=0.4, transforms=transforms.Compose([transforms.ToTensor(), normalize]))
+train_dataset = CMU_Hand_Manual(train_root_path, transforms=transforms.Compose([transforms.ToTensor(), normalize]))
+val_dataset = CMU_Hand_Manual(val_root_path, transforms=transforms.Compose([transforms.ToTensor(), normalize]))
 
 lr = 0.001
 lr_step = [100, 170]
@@ -120,8 +115,8 @@ lr_factor = 0.1
 base_channels = 48
 out_channels = train_dataset.num_joints
 
-train_print_freq = 500
-val_print_freq = 100
+train_print_freq = 100
+val_print_freq = 50
 ######################################### Model training config end.
 
 if __name__ == "__main__":

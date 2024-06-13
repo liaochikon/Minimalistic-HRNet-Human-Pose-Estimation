@@ -42,6 +42,8 @@ class CMU_Panopticdb(Dataset):
             image_path = os.path.join(self.root_path, anno['img_paths'])
             if os.path.isfile(image_path) == False:
                 continue
+            if anno['isValidation']:
+                print(anno['isValidation'])
 
             hand_keypoints = np.array(anno['joint_self'], dtype=np.float)
             joints = hand_keypoints.copy()

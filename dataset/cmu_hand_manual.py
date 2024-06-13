@@ -11,7 +11,8 @@ class CMU_Hand_Manual(Dataset):
                  num_joints = 21,
                  image_height = 288, image_width = 288,
                  heatmap_height = 72, heatmap_width = 72, heatmap_sigma = 2,
-                 flip_prob = 0.5,
+                 random_rotation_range = 360,
+
                  transforms = None):
         
         self.root_path = root_path
@@ -21,7 +22,7 @@ class CMU_Hand_Manual(Dataset):
         self.heatmap_height = heatmap_height
         self.heatmap_width = heatmap_width
         self.heatmap_sigma = heatmap_sigma
-        self.flip_prob = flip_prob
+        self.random_rotation_range = random_rotation_range
         self._transforms = transforms
         
         self.image_ids = []
@@ -29,6 +30,7 @@ class CMU_Hand_Manual(Dataset):
         self.image_affines = []
         self.bbox_list = []
         self.clean_bbox_list = []
+        self.center_list = []
         self.joints_list = []
         self.joint_vis_list = []
         self.is_left_list = []
@@ -83,6 +85,7 @@ class CMU_Hand_Manual(Dataset):
             self.image_affines.append(image_affine)
             self.bbox_list.append(bbox)
             self.clean_bbox_list.append(clean_bbox)
+            self.center_list.append(center)
             self.joints_list.append(joints)
             self.joint_vis_list.append(joint_vis)
             self.is_left_list.append(is_left)
@@ -141,15 +144,16 @@ class CMU_Hand_Manual(Dataset):
             target_weights = np.multiply(target_weights, self.joints_weight)
         return targets, target_weights
     
-    def get_filpbody_image(self, idx):
+    def get_filpbody_image(self, idx, M):
         image_path = self.image_paths[idx]
         image_affine = self.image_affines[idx].copy()
         image = cv2.imread(image_path)
-        warped_image = cv2.warpAffine(image, image_affine, (self.image_width, self.image_height))
+        rotated_image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
+        warped_image = cv2.warpAffine(rotated_image, image_affine, (self.image_width, self.image_height))
         fliped_image = cv2.flip(warped_image, 1)
         return fliped_image
 
-    def get_filpbody_joints(self, idx):
+    def get_filpbody_joints(self, idx, M):
         image_affine = self.image_affines[idx].copy()
         clean_bbox = self.clean_bbox_list[idx].copy()
         joints = self.joints_list[idx].copy()
@@ -157,6 +161,12 @@ class CMU_Hand_Manual(Dataset):
         joints[:, 0] -= clean_bbox[0]
         joints[:, 1] -= clean_bbox[1]
         joints[:, :2] = np.matmul(image_affine[:, :2], joints[:, :2].T).T
+        
+        joints[:, 0] -= self.image_width / 2
+        joints[:, 1] -= self.image_height / 2
+        joints[:, :2] = np.matmul(M[:, :2], joints[:, :2].T).T
+        joints[:, 0] += self.image_width / 2
+        joints[:, 1] += self.image_height / 2
 
         joints[:, 0] *= -1 
         joints[:, 0] += self.image_width
@@ -166,14 +176,15 @@ class CMU_Hand_Manual(Dataset):
         joint_vis = self.joint_vis_list[idx].copy()
         return joint_vis
 
-    def get_preprocessed_image(self, idx):
+    def get_preprocessed_image(self, idx, M):
         image_path = self.image_paths[idx]
         image_affine = self.image_affines[idx].copy()
         image = cv2.imread(image_path)
-        warped_image = cv2.warpAffine(image, image_affine, (self.image_width, self.image_height))
+        rotated_image = cv2.warpAffine(image, M, (image.shape[1], image.shape[0]))
+        warped_image = cv2.warpAffine(rotated_image, image_affine, (self.image_width, self.image_height))
         return warped_image
     
-    def get_preprocessed_joints(self, idx):
+    def get_preprocessed_joints(self, idx, M):
         image_affine = self.image_affines[idx].copy()
         clean_bbox = self.clean_bbox_list[idx].copy()
         joints = self.joints_list[idx].copy()
@@ -181,27 +192,40 @@ class CMU_Hand_Manual(Dataset):
         joints[:, 0] -= clean_bbox[0]
         joints[:, 1] -= clean_bbox[1]
         joints[:, :2] = np.matmul(image_affine[:, :2], joints[:, :2].T).T
+        
+        joints[:, 0] -= self.image_width / 2
+        joints[:, 1] -= self.image_height / 2
+        joints[:, :2] = np.matmul(M[:, :2], joints[:, :2].T).T
+        joints[:, 0] += self.image_width / 2
+        joints[:, 1] += self.image_height / 2
+        
         return joints
     
     def get_preprocessed_joint_vis(self, idx):
         joint_vis = self.joint_vis_list[idx].copy()
         return joint_vis
+    
+    def get_transform(self, idx, ang):
+        center = self.center_list[idx]
+        M = cv2.getRotationMatrix2D(center, ang, 1.0)
+        return M
 
     def __getitem__(self, idx):
         image_preprocess = []
         joints = []
         joint_vis = []
-        flipped = None
-        if random.random() <= self.flip_prob:
-            image_preprocess = self.get_filpbody_image(idx)
-            joints = self.get_filpbody_joints(idx)
+        is_left = self.is_left_list[idx]
+        random_ang = self.random_rotation_range * random.random()
+        M = self.get_transform(idx, random_ang)
+
+        if is_left:
+            image_preprocess = self.get_filpbody_image(idx, M)
+            joints = self.get_filpbody_joints(idx, M)
             joint_vis = self.get_filpbody_joint_vis(idx)
-            flipped = True
         else:
-            image_preprocess = self.get_preprocessed_image(idx)
-            joints = self.get_preprocessed_joints(idx)
+            image_preprocess = self.get_preprocessed_image(idx, M)
+            joints = self.get_preprocessed_joints(idx, M)
             joint_vis = self.get_preprocessed_joint_vis(idx)
-            flipped = False
 
         targets, target_weights = self.generate_heatmap_from_joints(joints, joint_vis, self.heatmap_sigma)
 
@@ -212,7 +236,8 @@ class CMU_Hand_Manual(Dataset):
 
         misc = {'image_preprocess' : image_preprocess,
                 'idx' : idx,
-                'flipped' : flipped,
+                'is_left' : is_left,
+                'random_ang' : random_ang,
                 'joints' : joints,
                 'joint_vis' : joint_vis}
         
